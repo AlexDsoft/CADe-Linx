@@ -46,6 +46,7 @@ def serialize_scene_to_dict(scene) -> dict:
                 "x2": item.p2.x(),
                 "y2": item.p2.y(),
                 "wire_type": item.wire_type,
+                "label": getattr(item, "label", ""),
                 "j1": item.junction_p1,
                 "j2": item.junction_p2,
             })
@@ -90,6 +91,7 @@ def restore_scene_from_dict(scene, data: dict):
         p1 = QPointF(w_data["x1"], w_data["y1"])
         p2 = QPointF(w_data["x2"], w_data["y2"])
         w = Wire(p1, p2, w_data.get("wire_type", "PHASE"))
+        w.label = w_data.get("label", "")
         w.junction_p1 = w_data.get("j1", False)
         w.junction_p2 = w_data.get("j2", False)
         scene.addItem(w)

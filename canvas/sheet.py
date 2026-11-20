@@ -1,3 +1,4 @@
+import math
 import copy
 from PyQt6.QtWidgets import (
     QGraphicsScene, QGraphicsView, QGraphicsLineItem,
@@ -569,7 +570,40 @@ class SchematicView(QGraphicsView):
                 sc.meta_author = a.strip().upper()
             sc.update()
             return
+
+        closest_cable = None
+        min_distance = float("inf")
+        for item in self.scene().items():
+            if isinstance(item, Wire):
+                dist = self.point_to_segment_distance(pt, item.p1, item.p2)
+                if dist < 10 and dist < min_distance:
+                    min_distance = dist
+                    closest_cable = item
+
+        if closest_cable is not None:
+            current_lbl = getattr(closest_cable, "label", "")
+            text, ok = QInputDialog.getText(
+                self,
+                "Numeración de Cable",
+                "Introduce la identificación del cable (ej. 1, L1, N):",
+                text=current_lbl
+            )
+            if ok:
+                self.push_undo()
+                closest_cable.label = text.strip()
+                closest_cable.update()
+            return
+
         super().mouseDoubleClickEvent(event)
+
+    def point_to_segment_distance(self, p, p1, p2):
+        l2 = (p2.x() - p1.x())**2 + (p2.y() - p1.y())**2
+        if l2 == 0:
+            return math.hypot(p.x() - p1.x(), p.y() - p1.y())
+        t = max(0, min(1, ((p.x() - p1.x()) * (p2.x() - p1.x()) + (p.y() - p1.y()) * (p2.y() - p1.y())) / l2))
+        proj_x = p1.x() + t * (p2.x() - p1.x())
+        proj_y = p1.y() + t * (p2.y() - p1.y())
+        return math.hypot(p.x() - proj_x, p.y() - proj_y)
 
     def drawForeground(self, painter: QPainter, rect: QRectF):
         super().drawForeground(painter, rect)

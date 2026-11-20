@@ -803,7 +803,26 @@ def get_next_available_label(scene, base_label: str) -> str:
     return f"{prefix}{num}"
 
 
-AUTO_NUMBER_CLASSES = (
+
+class TerminalBlock(ElectricalComponent):
+    def __init__(self, label: str = "1"):
+        super().__init__(label)
+        self.t_in = self.add_terminal("1", 0, -15)
+        self.t_out = self.add_terminal("2", 0, 15)
+
+    def internal_connections(self):
+        return [("1", "2")]
+
+    def paint(self, painter: QPainter, option, widget=None):
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(QPen(QColor("#111111"), 2.0))
+        painter.setBrush(QBrush(QColor("#F5F5F5")))
+        painter.drawRect(QRectF(-10, -10, 20, 20))
+        painter.drawLine(0, -15, 0, -10)
+        painter.drawLine(0, 10, 0, 15)
+        self.draw_terminals_and_label(painter, QPointF(14, 4))
+
+AUTO_NUMBER_CLASSES = (TerminalBlock, TerminalBlock, 
     Fuse1P, Breaker1P, Breaker3P, Contactor3P, ThermalRelay3P,
     Motor3P, Motor3P_YD, PushButtonNO, PushButtonNC, EmergencyStopNC,
     LimitSwitchNO, LimitSwitchNC, ContactorCoil, TimerCoilTON, TimerCoilTOF, PilotLamp
@@ -866,5 +885,25 @@ def _synced_double_click(self, event):
                     it.label = self.label
                     it.update()
 
+
+
+
+class TerminalBlock(ElectricalComponent):
+    def __init__(self, label: str = "1"):
+        super().__init__(label)
+        self.t_in = self.add_terminal("1", 0, -15)
+        self.t_out = self.add_terminal("2", 0, 15)
+
+    def internal_connections(self):
+        return [("1", "2")]
+
+    def paint(self, painter: QPainter, option, widget=None):
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setPen(QPen(QColor("#111111"), 2.0))
+        painter.setBrush(QBrush(QColor("#F5F5F5")))
+        painter.drawRect(QRectF(-10, -10, 20, 20))
+        painter.drawLine(0, -15, 0, -10)
+        painter.drawLine(0, 10, 0, 15)
+        self.draw_terminals_and_label(painter, QPointF(14, 4))
 
 ElectricalComponent.mouseDoubleClickEvent = _synced_double_click

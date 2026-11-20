@@ -25,6 +25,7 @@ class Wire(QGraphicsItem):
         self.p1 = QPointF(p1)
         self.p2 = QPointF(p2)
         self.wire_type = wire_type
+        self.label = ""  # Identificación o número del cable
         self.energized = False
         self.potential = None
         self.junction_p1 = False
@@ -35,7 +36,7 @@ class Wire(QGraphicsItem):
     def boundingRect(self) -> QRectF:
         x1, y1 = min(self.p1.x(), self.p2.x()), min(self.p1.y(), self.p2.y())
         x2, y2 = max(self.p1.x(), self.p2.x()), max(self.p1.y(), self.p2.y())
-        return QRectF(x1 - 8, y1 - 8, (x2 - x1) + 16, (y2 - y1) + 16)
+        return QRectF(x1 - 24, y1 - 24, (x2 - x1) + 80, (y2 - y1) + 48)
 
     def paint(self, painter: QPainter, option, widget=None):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -61,6 +62,22 @@ class Wire(QGraphicsItem):
             painter.drawEllipse(self.p1, 3.5, 3.5)
         if self.junction_p2:
             painter.drawEllipse(self.p2, 3.5, 3.5)
+
+        # Numeración del cable según criterio europeo: a la derecha, sin caja y mayor que contactos (7pt)
+        lbl = getattr(self, "label", "").strip()
+        if lbl:
+            mid_x = (self.p1.x() + self.p2.x()) / 2.0
+            mid_y = (self.p1.y() + self.p2.y()) / 2.0
+            is_vertical = abs(self.p2.y() - self.p1.y()) >= abs(self.p2.x() - self.p1.x())
+            if is_vertical:
+                tx = max(self.p1.x(), self.p2.x()) + 8.0
+                ty = mid_y + 4.0
+            else:
+                tx = max(self.p1.x(), self.p2.x()) - 14.0
+                ty = mid_y - 6.0
+            painter.setFont(QFont("SansSerif", 8, QFont.Weight.Bold))
+            painter.setPen(QPen(QColor("#111111"), 1.2))
+            painter.drawText(QPointF(tx, ty), lbl)
 
 
 class ElectricalComponent(QGraphicsObject):
@@ -111,7 +128,6 @@ class ElectricalComponent(QGraphicsObject):
         return super().itemChange(change, value)
 
     def draw_terminals_and_label(self, painter: QPainter, label_offset=QPointF(-42, 5)):
-        # Dibujar bornes rojos y sus números
         painter.setFont(QFont("SansSerif", 7))
         for t in self.terminals:
             painter.setPen(QPen(QColor("#CC0000"), 1.2))
@@ -120,7 +136,6 @@ class ElectricalComponent(QGraphicsObject):
             painter.setPen(QPen(QColor("#555555"), 1.0))
             painter.drawText(QPointF(t.rel_pos.x() + 4, t.rel_pos.y() - 3), t.name)
 
-        # Dibujar identificador del componente (KM1, Q1, F1, etc.)
         painter.setFont(QFont("SansSerif", 9, QFont.Weight.Bold))
         painter.setPen(QPen(QColor("#002266"), 1.2))
         painter.drawText(label_offset, self.label)

@@ -17,7 +17,7 @@ from components.library import (
     PushButtonNO, PushButtonNC, EmergencyStopNC, LimitSwitchNO, LimitSwitchNC,
     AuxContactNO, AuxContactNC, AuxThermalNO, AuxThermalNC,
     TimerContactTON_NO, TimerContactTON_NC, TimerContactTOF_NO, TimerContactTOF_NC,
-    ContactorCoil, TimerCoilTON, TimerCoilTOF, PilotLamp
+    ContactorCoil, TimerCoilTON, TimerCoilTOF, PilotLamp, TerminalBlock
 )
 
 
@@ -41,6 +41,7 @@ class MainWindow(QMainWindow):
                 ("Alim. 3P (L1-L3)", PowerSupply3P),
                 ("Alim. 3P+N+PE", PowerSupply3PN),
                 ("Toma Tierra (PE)", GroundPE),
+                ("Borne Numerado (X)", TerminalBlock),
             ],
             "🛡️ Fusibles y Disyuntores": [
                 ("Fusible 1P (F)", Fuse1P),
@@ -109,7 +110,7 @@ class MainWindow(QMainWindow):
         file_menu.addAction(act_save)
 
         file_menu.addSeparator()
-        act_export = QAction("🖼️ Exportar a PNG / PDF...", self)
+        act_export = QAction("🖼️ Exportar a PNG / JPG / PDF...", self)
         act_export.triggered.connect(self.export_sheet)
         file_menu.addAction(act_export)
 
@@ -419,7 +420,7 @@ class MainWindow(QMainWindow):
         self.reset_tool_selection()
         path, _ = QFileDialog.getSaveFileName(
             self, "Exportar Esquema", "plano_cadelinx.pdf",
-            "Documento PDF (*.pdf);;Imagen PNG (*.png)"
+            "Documento PDF (*.pdf);;Imagen PNG (*.png);;Imagen JPG (*.jpg)"
         )
         if not path:
             return
@@ -429,25 +430,38 @@ class MainWindow(QMainWindow):
 
         sr = self.scene.sceneRect()
         W, H = int(sr.width()), int(sr.height())
+        low = path.lower()
 
-        if path.lower().endswith(".png"):
+        if low.endswith(".png") or low.endswith(".jpg") or low.endswith(".jpeg"):
+            if not (low.endswith(".png") or low.endswith(".jpg") or low.endswith(".jpeg")):
+                path += ".png"
             img = QImage(W, H, QImage.Format.Format_ARGB32)
             img.fill(Qt.GlobalColor.white)
-            p = QPainter(img)
-            p.setRenderHint(QPainter.RenderHint.Antialiasing)
-            self.scene.render(p, QRectF(0, 0, W, H), QRectF(0, 0, W, H))
-            p.end()
-            img.save(path)
+            painter = QPainter(img)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+            self.scene.render(painter, QRectF(0, 0, W, H), QRectF(0, 0, W, H))
+            painter.end()
+            if low.endswith(".jpg") or low.endswith(".jpeg"):
+                img.save(path, "JPG", 95)
+            else:
+                img.save(path, "PNG")
         else:
-            if not path.lower().endswith(".pdf"):
+            if not low.endswith(".pdf"):
                 path += ".pdf"
             writer = QPdfWriter(path)
-            writer.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
+            writer.setResolution(300)
+            writer.setPageSize(QPageSize(QPageSize.PageSizeId.A3))
             writer.setPageOrientation(QPageLayout.Orientation.Landscape)
-            writer.setPageMargins(QMarginsF(5, 5, 5, 5))
-            p = QPainter(writer)
-            self.scene.render(p, QRectF(0, 0, writer.width(), writer.height()), QRectF(0, 0, W, H))
-            p.end()
+            writer.setPageMargins(QMarginsF(6, 6, 6, 6), QPageLayout.Unit.Millimeter)
+            painter = QPainter(writer)
+            painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+            pw, ph = float(writer.width()), float(writer.height())
+            scale = min(pw / max(1, W), ph / max(1, H))
+            target_w, target_h = W * scale, H * scale
+            off_x = (pw - target_w) / 2.0
+            off_y = (ph - target_h) / 2.0
+            self.scene.render(painter, QRectF(off_x, off_y, target_w, target_h), QRectF(0, 0, W, H))
+            painter.end()
 
         QMessageBox.information(self, "Exportación completada", f"Plano exportado correctamente en:\n{path}")
 
