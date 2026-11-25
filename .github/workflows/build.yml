@@ -22,26 +22,26 @@ jobs:
           python-version: '3.10'
           cache: 'pip'
 
-       - name: 📦 Instalar dependencias y PyInstaller
-         run: |
-            python -m pip install --upgrade pip
-            pip install -r requirements.txt
-            pip install pyinstaller pillow
-  
-        - name: 🎨 Generar icono .ico para Windows
-          run: |
-            python -c "from PIL import Image, ImageDraw; img = Image.new('RGBA', (256, 256), (0, 0, 0, 0)); d = ImageDraw.Draw(img); d.rounded_rectangle([0, 0, 255, 255], radius=48, fill='#1565C0'); d.polygon([(148,32),(64,144),(124,144),(108,224),(192,112),(132,112)], fill='#FFD600'); img.save('icon.ico', format='ICO', sizes=[(256,256),(128,128),(64,64),(48,48),(32,32),(16,16)])"
-  
-        - name: 🔨 Compilar ejecutable para Windows (.exe)
-          run: |
-            pyinstaller --noconfirm --onefile --windowed --icon=icon.ico --add-data "icon.svg;." --name "CADe_Linx_Win" main.py
-  
-        - name: 🚀 Publicar Release Automática en GitHub
-          uses: softprops/action-gh-release@v2
-          with:
-            files: dist/CADe_Linx_Win.exe
-            tag_name: v1.0.${{ github.run_number }}
-            name: "CADe Linx v1.0.${{ github.run_number }} (Windows Portable)"
-            body: "Versión ejecutable portable de CADe Linx para Windows compilada automáticamente."
-          env:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: 📦 Instalar dependencias y PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller pillow
+
+      - name: 🎨 Generar icono .ico para Windows
+        run: |
+          python -c "from PIL import Image, ImageDraw; img = Image.new('RGBA', (256, 256), (0, 0, 0, 0)); d = ImageDraw.Draw(img); d.rounded_rectangle([0, 0, 255, 255], radius=48, fill='#1565C0'); d.polygon([(148,32),(64,144),(124,144),(108,224),(192,112),(132,112)], fill='#FFD600'); img.save('icon.ico', format='ICO', sizes=[(256,256),(128,128),(64,64),(48,48),(32,32),(16,16)])"
+
+      - name: 🔨 Compilar ejecutable para Windows (.exe)
+        run: |
+          pyinstaller --noconfirm --onefile --windowed --icon=icon.ico --add-data "icon.svg;." --name "CADe_Linx_Win" main.py
+
+      - name: 🚀 Publicar Release Automática en GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/CADe_Linx_Win.exe
+          tag_name: v1.0.${{ github.run_number }}
+          name: "CADe Linx v1.0.${{ github.run_number }} (Windows Portable)"
+          body: "Versión ejecutable portable de CADe Linx para Windows compilada automáticamente."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
