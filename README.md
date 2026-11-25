@@ -1,4 +1,4 @@
-# CADe Linx - Simulador de Automatismos Eléctricos para Linux
+# CADe Linx - Simulador de Automatismos Eléctricos para Linux y Windows
 
 **CADe Linx** es un software educativo de diseño y simulación interactiva de esquemas eléctricos de fuerza y maniobra para sistemas Linux, desarrollado en Python 3 y PyQt6 bajo la normativa europea **UNE-EN 60617 (IEC 60617)**, **EN 50005** y **UNE-EN 81346**.
 
