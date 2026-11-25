@@ -822,7 +822,95 @@ class TerminalBlock(ElectricalComponent):
         painter.drawLine(0, 10, 0, 15)
         self.draw_terminals_and_label(painter, QPointF(14, 4))
 
-AUTO_NUMBER_CLASSES = (TerminalBlock, TerminalBlock, 
+
+class CamSwitchI0D(ElectricalComponent):
+    def __init__(self, label: str = "S1"):
+        super().__init__(label)
+        self.pos_idx = 0
+        self.t_l1 = self.add_terminal("1", -20, -30)
+        self.t_l2 = self.add_terminal("3", 0, -30)
+        self.t_l3 = self.add_terminal("5", 20, -30)
+        self.t_u = self.add_terminal("2", -20, 30)
+        self.t_v = self.add_terminal("4", 0, 30)
+        self.t_w = self.add_terminal("6", 20, 30)
+
+    def mousePressEvent(self, event):
+        if self.is_simulating and event.button() == Qt.MouseButton.LeftButton:
+            self.pos_idx = (self.pos_idx + 1) % 3
+            self.update()
+            return
+        super().mousePressEvent(event)
+
+    def internal_connections(self):
+        if self.pos_idx == 1:
+            return [(self.t_l1, self.t_u), (self.t_l2, self.t_v), (self.t_l3, self.t_w)]
+        if self.pos_idx == 2:
+            return [(self.t_l1, self.t_u), (self.t_l2, self.t_w), (self.t_l3, self.t_v)]
+        return []
+
+    def paint(self, painter: QPainter, option, widget=None):
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        pos_txt = ("0", "D", "I")[self.pos_idx]
+        painter.setPen(QPen(QColor("#111111"), 2.0))
+        painter.setBrush(QBrush(QColor("#FFF3E0" if self.pos_idx else "#F5F5F5")))
+        painter.drawRect(QRectF(-28, -22, 56, 44))
+        for x in (-20, 0, 20):
+            painter.drawLine(x, -30, x, -22)
+            painter.drawLine(x, 22, x, 30)
+        painter.setFont(QFont("SansSerif", 7, QFont.Weight.Bold))
+        painter.drawText(QRectF(-28, -20, 56, 14), Qt.AlignmentFlag.AlignCenter, "I - 0 - D")
+        painter.setFont(QFont("SansSerif", 11, QFont.Weight.Bold))
+        painter.setPen(QPen(QColor("#D32F2F" if self.pos_idx else "#111111"), 1.5))
+        painter.drawText(QRectF(-28, -4, 56, 22), Qt.AlignmentFlag.AlignCenter, pos_txt)
+        self.draw_terminals_and_label(painter, QPointF(-58, 4))
+
+
+class CamSwitch0YD(ElectricalComponent):
+    def __init__(self, label: str = "S2"):
+        super().__init__(label)
+        self.pos_idx = 0
+        self.t_l1 = self.add_terminal("L1", -20, -30)
+        self.t_l2 = self.add_terminal("L2", 0, -30)
+        self.t_l3 = self.add_terminal("L3", 20, -30)
+        self.t_u1 = self.add_terminal("U1", -50, 30)
+        self.t_v1 = self.add_terminal("V1", -30, 30)
+        self.t_w1 = self.add_terminal("W1", -10, 30)
+        self.t_w2 = self.add_terminal("W2", 10, 30)
+        self.t_u2 = self.add_terminal("U2", 30, 30)
+        self.t_v2 = self.add_terminal("V2", 50, 30)
+
+    def mousePressEvent(self, event):
+        if self.is_simulating and event.button() == Qt.MouseButton.LeftButton:
+            self.pos_idx = (self.pos_idx + 1) % 3
+            self.update()
+            return
+        super().mousePressEvent(event)
+
+    def internal_connections(self):
+        if self.pos_idx == 1:
+            return [(self.t_l1, self.t_u1), (self.t_l2, self.t_v1), (self.t_l3, self.t_w1), (self.t_w2, self.t_u2), (self.t_u2, self.t_v2)]
+        if self.pos_idx == 2:
+            return [(self.t_l1, self.t_u1), (self.t_l2, self.t_v1), (self.t_l3, self.t_w1), (self.t_l1, self.t_w2), (self.t_l2, self.t_u2), (self.t_l3, self.t_v2)]
+        return []
+
+    def paint(self, painter: QPainter, option, widget=None):
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        pos_txt = ("0", "Y", "Δ")[self.pos_idx]
+        painter.setPen(QPen(QColor("#111111"), 2.0))
+        painter.setBrush(QBrush(QColor("#E8F5E9" if self.pos_idx else "#F5F5F5")))
+        painter.drawRect(QRectF(-56, -22, 112, 44))
+        for x in (-20, 0, 20):
+            painter.drawLine(x, -30, x, -22)
+        for x in (-50, -30, -10, 10, 30, 50):
+            painter.drawLine(x, 22, x, 30)
+        painter.setFont(QFont("SansSerif", 7, QFont.Weight.Bold))
+        painter.drawText(QRectF(-56, -20, 112, 14), Qt.AlignmentFlag.AlignCenter, "0 - Y - Δ")
+        painter.setFont(QFont("SansSerif", 11, QFont.Weight.Bold))
+        painter.setPen(QPen(QColor("#2E7D32" if self.pos_idx else "#111111"), 1.5))
+        painter.drawText(QRectF(-56, -4, 112, 22), Qt.AlignmentFlag.AlignCenter, pos_txt)
+        self.draw_terminals_and_label(painter, QPointF(-86, 4))
+
+AUTO_NUMBER_CLASSES = (CamSwitchI0D, CamSwitch0YD, TerminalBlock, TerminalBlock, 
     Fuse1P, Breaker1P, Breaker3P, Contactor3P, ThermalRelay3P,
     Motor3P, Motor3P_YD, PushButtonNO, PushButtonNC, EmergencyStopNC,
     LimitSwitchNO, LimitSwitchNC, ContactorCoil, TimerCoilTON, TimerCoilTOF, PilotLamp

@@ -118,6 +118,26 @@ class CircuitSimulator:
                     w.potential = w_pot
                     w.energized = w_pot in ("L1", "L2", "L3", "N")
 
+        # Detectar puente en estrella (W2-U2-V2) en motores Y/Δ
+        for c in comps:
+            if c.__class__.__name__ == "Motor3P_YD" and len(c.terminals) >= 6:
+                k_w2 = pt_key(c.terminals[3].scene_pos())
+                k_u2 = pt_key(c.terminals[4].scene_pos())
+                k_v2 = pt_key(c.terminals[5].scene_pos())
+                vis, q = set(), [k_w2]
+                while q:
+                    cur = q.pop(0)
+                    if cur in vis:
+                        continue
+                    vis.add(cur)
+                    for nx in adj[cur]:
+                        if nx not in vis:
+                            q.append(nx)
+                if k_u2 in vis and k_v2 in vis:
+                    for i in (3, 4, 5):
+                        if c.terminals[i].potential is None:
+                            c.terminals[i].potential = "Y"
+
         # 3. Evaluar bobinas, temporizadores y pilotos luminosos (requieren diferencia de potencial ej. L y N o entre fases)
         active_coils = set()
         active_ton = set()

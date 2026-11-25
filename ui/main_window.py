@@ -2,10 +2,10 @@ from PyQt6.QtWidgets import (
     QMainWindow, QToolBar, QStatusBar, QFileDialog,
     QMessageBox, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QCheckBox, QButtonGroup,
-    QDialog, QTextBrowser
+    QDialog, QTextBrowser, QSizePolicy
 )
-from PyQt6.QtGui import QAction, QPainter, QImage, QPageLayout, QPageSize, QPdfWriter, QKeySequence
-from PyQt6.QtCore import Qt, QTimer, QRectF, QMarginsF
+from PyQt6.QtGui import QAction, QPainter, QImage, QPageLayout, QPageSize, QPdfWriter, QKeySequence, QIcon, QPixmap, QPen, QColor
+from PyQt6.QtCore import Qt, QTimer, QRectF, QMarginsF, QSize
 
 from canvas.sheet import SchematicScene, SchematicView
 from engine.simulator import CircuitSimulator
@@ -17,7 +17,7 @@ from components.library import (
     PushButtonNO, PushButtonNC, EmergencyStopNC, LimitSwitchNO, LimitSwitchNC,
     AuxContactNO, AuxContactNC, AuxThermalNO, AuxThermalNC,
     TimerContactTON_NO, TimerContactTON_NC, TimerContactTOF_NO, TimerContactTOF_NC,
-    ContactorCoil, TimerCoilTON, TimerCoilTOF, PilotLamp, TerminalBlock
+    ContactorCoil, TimerCoilTON, TimerCoilTOF, PilotLamp, TerminalBlock, CamSwitchI0D, CamSwitch0YD
 )
 
 
@@ -25,7 +25,8 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("CADe Linx - Simulador de Automatismos Eléctricos")
-        self.resize(1380, 860)
+        self.resize(1200, 760)
+        self.setMinimumSize(640, 480)
 
         self.scene = SchematicScene(self)
         self.view = SchematicView(self.scene, self)
@@ -60,6 +61,8 @@ class MainWindow(QMainWindow):
                 ("Paro Emergencia", EmergencyStopNC),
                 ("Final Carrera NA", LimitSwitchNO),
                 ("Final Carrera NC", LimitSwitchNC),
+                ("Conmutador Levas I-0-D", CamSwitchI0D),
+                ("Conmutador Estrella-Triángulo (0-Y-Δ)", CamSwitch0YD),
             ],
             "🔗 Contactos Auxiliares": [
                 ("Auxiliar NA (13-14)", AuxContactNO),
@@ -254,6 +257,7 @@ class MainWindow(QMainWindow):
 
         fam_bar = QWidget()
         fam_bar.setStyleSheet("background: #ECEFF1; border-bottom: 1px solid #CFD8DC;")
+        fam_bar.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
         fam_layout = QHBoxLayout(fam_bar)
         fam_layout.setContentsMargins(8, 4, 8, 4)
         fam_layout.setSpacing(6)
@@ -269,7 +273,7 @@ class MainWindow(QMainWindow):
             btn = QPushButton(fam_name)
             btn.setCheckable(True)
             btn.setStyleSheet("""
-                QPushButton { background: #FFFFFF; color: #111111; border: 1px solid #B0BEC5; border-radius: 4px; padding: 4px 10px; font-weight: bold; }
+                QPushButton { background: #FFFFFF; color: #111111; border: 1px solid #B0BEC5; border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: bold; }
                 QPushButton:checked { background: #90CAF9; color: #0D47A1; border: 2px solid #1565C0; }
                 QPushButton:hover { background: #E3F2FD; }
             """)
@@ -284,6 +288,7 @@ class MainWindow(QMainWindow):
 
         self.sym_bar = QWidget()
         self.sym_bar.setStyleSheet("background: #F9FAFB; border-bottom: 1px solid #CFD8DC;")
+        self.sym_bar.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Fixed)
         self.sym_layout = QHBoxLayout(self.sym_bar)
         self.sym_layout.setContentsMargins(8, 4, 8, 4)
         self.sym_layout.setSpacing(6)
@@ -297,6 +302,30 @@ class MainWindow(QMainWindow):
 
         first_family = list(self.families.keys())[0]
         self.populate_symbols(first_family)
+
+    def _make_symbol_icon(self, tool_val):
+        pm = QPixmap(36, 36)
+        pm.fill(Qt.GlobalColor.transparent)
+        p = QPainter(pm)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        if isinstance(tool_val, str):
+            if tool_val == "WIRE_PHASE":
+                p.setPen(QPen(QColor("#8B4513"), 3)); p.drawLine(4, 18, 32, 18)
+            elif tool_val == "WIRE_NEUTRAL":
+                p.setPen(QPen(QColor("#0055CC"), 3)); p.drawLine(4, 18, 32, 18)
+            elif tool_val == "WIRE_PE":
+                p.setPen(QPen(QColor("#2E7D32"), 3, Qt.PenStyle.DashLine)); p.drawLine(4, 18, 32, 18)
+            else:
+                p.setPen(QPen(QColor("#8B4513"), 2))
+                for y in (10, 18, 26): p.drawLine(4, y, 32, y)
+        else:
+            comp = tool_val()
+            br = comp.boundingRect()
+            sc = min(30.0 / max(br.width(), 1.0), 30.0 / max(br.height(), 1.0))
+            p.translate(18.0, 18.0); p.scale(sc, sc); p.translate(-br.center().x(), -br.center().y())
+            comp.paint(p, None, None)
+        p.end()
+        return QIcon(pm)
 
     def populate_symbols(self, family_name: str):
         while self.sym_layout.count():
@@ -312,10 +341,14 @@ class MainWindow(QMainWindow):
         self.sym_layout.addWidget(lbl_s)
 
         for name, tool_val in self.families.get(family_name, []):
-            btn = QPushButton(name)
+            btn = QPushButton()
+            btn.setIcon(self._make_symbol_icon(tool_val))
+            btn.setIconSize(QSize(30, 30))
+            btn.setFixedSize(40, 38)
+            btn.setToolTip(name)
             btn.setCheckable(True)
             btn.setStyleSheet("""
-                QPushButton { background: #FFFFFF; color: #111111; border: 1px solid #B0BEC5; border-radius: 4px; padding: 4px 10px; font-weight: bold; }
+                QPushButton { background: #FFFFFF; color: #111111; border: 1px solid #B0BEC5; border-radius: 4px; padding: 2px 6px; font-size: 11px; font-weight: bold; }
                 QPushButton:checked { background: #81D4FA; color: #01579B; border: 2px solid #0277BD; }
                 QPushButton:hover { background: #E1F5FE; }
             """)
